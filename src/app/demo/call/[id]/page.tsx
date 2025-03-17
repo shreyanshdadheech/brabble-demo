@@ -48,9 +48,9 @@ export default function CallPage({ params }: { params: { id: string } }) {
 
   return (
     <PageTransition>
-      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center p-4 bg-gray-100">
-        {/* Left side - Language selection */}
-        <div className="w-full md:w-1/2 flex flex-col items-center mb-8 md:mb-0">
+      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gray-100">
+        {/* Language selection - hidden on mobile */}
+        <div className="hidden md:flex w-full md:w-1/2 flex-col items-center">
           <div className="max-w-xs w-full">
             <h2 className="text-xl font-bold mb-8 text-center">Select Language</h2>
             <div className="flex flex-col space-y-4">
@@ -71,17 +71,16 @@ export default function CallPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        {/* Right side - iPhone call interface with full moon */}
-        <div className="w-full md:w-1/2 flex justify-center">
-          {/* iPhone 16 Pro frame */}
-          <div className="relative w-[320px] h-[650px] bg-black rounded-[55px] p-[12px] shadow-xl border-[14px] border-black overflow-hidden">
-            {/* iPhone notch */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-7 bg-black rounded-b-xl z-10"></div>
+        {/* Phone interface - full width on mobile */}
+        <div className="w-full md:w-1/2 h-screen md:h-auto flex items-center justify-center">
+          <div className="relative w-full h-full md:w-[320px] md:h-[650px] bg-gradient-to-b from-gray-800 to-black md:rounded-[55px] md:p-[12px] md:shadow-xl md:border-[14px] border-black overflow-hidden">
+            {/* iPhone notch - only visible on desktop */}
+            <div className="hidden md:block absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-7 bg-black rounded-b-xl z-10"></div>
 
-            {/* Phone UI */}
-            <div className="bg-gradient-to-b from-gray-800 to-black h-full rounded-[40px] flex flex-col">
+            {/* Phone UI - full height on mobile */}
+            <div className="relative h-full md:rounded-[40px] flex flex-col">
               {/* Status bar */}
-              <div className="pt-7 pb-2 px-5 flex justify-between items-center text-xs text-white">
+              <div className="pt-2 pb-2 px-5 flex justify-between items-center text-xs text-white">
                 <span className="font-semibold">
                   {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>
