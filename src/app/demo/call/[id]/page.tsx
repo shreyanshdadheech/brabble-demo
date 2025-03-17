@@ -60,7 +60,7 @@ export default function CallPage({ params }: { params: { id: string } }) {
                   onClick={() => setSelectedLanguage(language)}
                   className={`py-4 px-4 rounded-lg text-center font-medium transition-colors ${
                     selectedLanguage === language
-                      ? "bg-blue-600 text-white"
+                      ? "bg-purple-950 text-white"
                       : "bg-white text-gray-800 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
@@ -82,7 +82,7 @@ export default function CallPage({ params }: { params: { id: string } }) {
               {/* Status bar */}
               <div className="pt-2 pb-2 px-5 flex justify-between items-center text-xs text-white">
                 <span className="font-semibold">
-                  {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"  , hour12: true})}
                 </span>
                 <div className="flex space-x-1">
                   <div className="w-4 h-2.5 bg-white rounded-sm"></div>

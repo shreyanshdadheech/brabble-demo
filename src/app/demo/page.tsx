@@ -74,17 +74,21 @@ export default function SearchPage() {
 
             {/* Phone UI */}
               
-        <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0">
+        <div className="w-full md:w-1/2 h-screen md:h-auto flex items-center justify-center">
           {/* iPhone 16 Pro frame */}
-          <div className="relative w-[320px] h-[650px] bg-black rounded-[55px] p-[12px] shadow-xl border-[14px] border-black overflow-hidden">
+          <div className="relative w-full h-full md:w-[320px] md:h-[650px] bg-gradient-to-b from-gray-800 to-black md:rounded-[55px] md:shadow-xl md:border-[14px] border-black overflow-hidden">
             {/* iPhone notch */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-7 bg-black rounded-b-xl z-10"></div>
-            <div className="bg-gradient-to-b from-gray-800 to-black h-full rounded-[40px] flex flex-col">
+            <div className="hidden md:block absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-7 bg-black rounded-b-xl z-10"></div>
 
-            {/* Status bar */}
-              <div className="pt-7 pb-2 px-5 flex justify-between items-center text-xs text-white">
+            
+            
+
+            {/* Google Maps interface */}
+            <div className="flex flex-col h-full rounded-[40px]  bg-white">
+             {/* Status bar */}
+              <div className="pt-7 pb-2 px-5 flex justify-between items-center text-xs text-black ">
               <span className="font-semibold">
-                  {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" , hour12: true})}
                 </span>
               <div className="flex space-x-1">
                 <div className="w-4 h-2.5 bg-black rounded-sm"></div>
@@ -92,10 +96,6 @@ export default function SearchPage() {
                 <div className="w-2.5 h-2.5 bg-black rounded-full"></div>
               </div>
             </div>
-            
-
-            {/* Google Maps interface */}
-            <div className="flex flex-col h-[calc(100%-40px)] bg-white">
               {/* Google Maps search header */}
               <div className="bg-white p-3 shadow-sm z-10 ">
                 <div className="flex items-center">
@@ -189,7 +189,6 @@ export default function SearchPage() {
 
             {/* Home indicator */}
             <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1/3 h-1 bg-gray-800 rounded-full"></div>
-          </div>
           </div>
         </div>
 
