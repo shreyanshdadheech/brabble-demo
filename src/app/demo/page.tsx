@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation"
 import { Search, Navigation, Star, Clock, Phone, ChevronDown } from "lucide-react"
 import Image from "next/image"
 import { PageTransition } from "@/components/PageTransition"
+import { AnimatedMoon } from "@/components/AnimatedMoon"
+import { motion } from "framer-motion"
 
 export default function SearchPage() {
   const router = useRouter()
   const [searchValue, setSearchValue] = useState("")
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [moonVariant, setMoonVariant] = useState<"crescent" | "full" | "sun">("crescent")
 
   // Update time every minute
   useEffect(() => {
@@ -51,6 +54,13 @@ export default function SearchPage() {
       address: "789 Delivery Rd, Mumbai",
     },
   ]
+
+  const handleMoonClick = (id: number) => {
+    setMoonVariant("sun")
+    setTimeout(() => {
+      handleCall(id)
+    }, 1000)
+  }
 
   const handleCall = (id: number) => {
     router.push(`/demo/call/${id}`)
@@ -165,7 +175,7 @@ export default function SearchPage() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handleCall(business.id)}
+                        onClick={() => handleMoonClick(business.id)}
                         className="ml-2 p-2 text-blue-600 hover:bg-blue-50 rounded-full self-start"
                         aria-label={`Call ${business.name}`}
                       >
@@ -183,15 +193,29 @@ export default function SearchPage() {
           </div>
         </div>
 
-        {/* Right side - Moon visualization */}
+        {/* Right side - Enhanced Moon/Sun visualization */}
         <div className="w-full md:w-1/2 flex items-center justify-center">
-          <div className="relative">
-            {/* Crescent moon */}
-            <div className="relative w-64 h-64">
-              <div className="absolute inset-0 bg-gray-800 rounded-full"></div>
-              <div className="absolute inset-0 bg-gray-100 rounded-full transform translate-x-8"></div>
-            </div>
-          </div>
+          <motion.div
+            className="relative"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <AnimatedMoon
+              variant={moonVariant}
+              className="w-64 h-64 cursor-pointer"
+              onClick={() => setMoonVariant(prev => 
+                prev === "crescent" ? "full" : 
+                prev === "full" ? "sun" : "crescent"
+              )}
+            />
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mix-blend-overlay rounded-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: moonVariant === "sun" ? 0.3 : 0 }}
+              transition={{ duration: 0.5 }}
+            />
+          </motion.div>
         </div>
       </div>
     </PageTransition>

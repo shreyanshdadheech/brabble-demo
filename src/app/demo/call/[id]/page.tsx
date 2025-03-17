@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { X, Mic, Speaker, ChevronDown } from "lucide-react"
 import { PageTransition } from "@/components/PageTransition"
+import { AnimatedMoon } from "@/components/AnimatedMoon"
+import { motion } from "framer-motion"
 
 export default function CallPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -118,10 +120,43 @@ export default function CallPage({ params }: { params: { id: string } }) {
                 )}
               </div>
 
-              {/* Full moon visualization */}
-              <div className="flex-1 flex items-center justify-center">
-                <div className="w-48 h-48 bg-gray-100 rounded-full"></div>
+              {/* Full moon visualization with enhanced animation */}
+              <div className="flex-1 flex items-center justify-center relative">
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="relative"
+                >
+                  <AnimatedMoon variant="sun" className="w-48 h-48" />
+                </motion.div>
+
+                {/* Enhanced ripple effects */}
+                <motion.div
+                  className="absolute pointer-events-none"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: [1, 2, 3], opacity: [0.3, 0.2, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    background: "radial-gradient(circle, rgb(250, 204, 21) 0%, transparent 70%)",
+                    width: "200px",
+                    height: "200px",
+                    borderRadius: "50%",
+                  }}
+                />
               </div>
+
+              {/* Full screen ripple effect */}
+              <motion.div
+                className="fixed inset-0 pointer-events-none"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 100, opacity: 0.1 }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+                style={{
+                  background: "radial-gradient(circle, rgb(243 244 246) 0%, transparent 70%)",
+                  zIndex: -1,
+                }}
+              />
 
               {/* Caller info */}
               <div className="text-center mb-6 px-4">
