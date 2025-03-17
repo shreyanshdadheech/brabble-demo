@@ -6,6 +6,7 @@ import { X, Mic, Speaker, ChevronDown } from "lucide-react"
 import { PageTransition } from "@/components/PageTransition"
 import { AnimatedMoon } from "@/components/AnimatedMoon"
 import { motion } from "framer-motion"
+import { AccessDialog } from "@/components/AccessDialog"
 
 export default function CallPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -48,7 +49,7 @@ export default function CallPage({ params }: { params: { id: string } }) {
 
   return (
     <PageTransition>
-      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-purple-50">
         {/* Language selection - hidden on mobile */}
         <div className="hidden md:flex w-full md:w-1/2 flex-col items-center">
           <div className="max-w-xs w-full">
@@ -68,6 +69,9 @@ export default function CallPage({ params }: { params: { id: string } }) {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="mt-8">
+            <AccessDialog />
           </div>
         </div>
 
@@ -195,6 +199,11 @@ export default function CallPage({ params }: { params: { id: string } }) {
               <div className="mb-2 mx-auto w-1/3 h-1 bg-gray-600 rounded-full"></div>
             </div>
           </div>
+        </div>
+
+        {/* Show dialog trigger on mobile */}
+        <div className="md:hidden">
+          <AccessDialog />
         </div>
       </div>
     </PageTransition>

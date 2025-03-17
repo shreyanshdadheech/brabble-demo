@@ -6,10 +6,21 @@ interface AnimatedMoonProps {
   variant: "crescent" | "full" | "sun"
   className?: string
   onClick?: () => void
+  isLoading?: boolean
 }
 
-export function AnimatedMoon({ variant, className = "", onClick }: AnimatedMoonProps) {
+export function AnimatedMoon({ variant, className = "", onClick, isLoading = false }: AnimatedMoonProps) {
   const moonVariants = {
+    loading: {
+      background: "rgb(243 244 246)",
+      x: ["0px", "32px", "0px"],
+      scale: [1, 1.1, 1],
+      transition: {
+        duration: 0.1,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }
+    },
     crescent: {
       background: "rgb(243 244 246)",
       x: "32px",
@@ -20,7 +31,8 @@ export function AnimatedMoon({ variant, className = "", onClick }: AnimatedMoonP
       background: "rgb(243 244 246)",
       x: "0px",
       scale: 1,
-      boxShadow: "0 0 60px 30px rgba(243, 244, 246, 0.3)"
+            boxShadow: "0 0 60px 30px rgba(243, 244, 246, 0.3), 0 0 100px 60px rgba(250, 204, 21, 0.3)"
+
     },
     sun: {
       background: "rgb(250, 204, 21)",
@@ -59,8 +71,8 @@ export function AnimatedMoon({ variant, className = "", onClick }: AnimatedMoonP
       <div className="absolute inset-0 bg-gray-800 rounded-full"></div>
       <motion.div
         className="absolute inset-0 rounded-full"
-        initial={variant}
-        animate={variant}
+        initial="loading"
+        animate={isLoading ? "loading" : variant}
         variants={moonVariants}
         transition={{ duration: 1, ease: "easeInOut" }}
       ></motion.div>

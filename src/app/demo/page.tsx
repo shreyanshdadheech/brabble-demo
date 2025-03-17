@@ -12,7 +12,25 @@ export default function SearchPage() {
   const router = useRouter()
   const [searchValue, setSearchValue] = useState("")
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [isLoading, setIsLoading] = useState(true)
   const [moonVariant, setMoonVariant] = useState<"crescent" | "full" | "sun">("crescent")
+
+  // Determine initial moon state based on time
+  useEffect(() => {
+    const hour = currentTime.getHours()
+    
+    // Simulate loading state
+    setTimeout(() => {
+      if (hour >= 6 && hour < 12) {
+        setMoonVariant("crescent") // Morning
+      } else if (hour >= 12 && hour < 18) {
+        setMoonVariant("sun") // Afternoon
+      } else {
+        setMoonVariant("full") // Evening/Night
+      }
+      setIsLoading(false)
+    }, 2000)
+  }, [])
 
   // Update time every minute
   useEffect(() => {
@@ -68,7 +86,7 @@ export default function SearchPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center p-4 bg-gray-100">
+      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center p-4 bg-purple-50">
         {/* Left side - iPhone with Google Maps */}
             {/* iPhone notch */}
 
@@ -84,7 +102,7 @@ export default function SearchPage() {
             
 
             {/* Google Maps interface */}
-            <div className="flex flex-col h-full rounded-[40px]  bg-white">
+            <div className="flex flex-col h-full md:rounded-[40px]  bg-white">
              {/* Status bar */}
               <div className="pt-7 pb-2 px-5 flex justify-between items-center text-xs text-black ">
               <span className="font-semibold">
@@ -203,10 +221,8 @@ export default function SearchPage() {
             <AnimatedMoon
               variant={moonVariant}
               className="w-64 h-64 cursor-pointer"
-              onClick={() => setMoonVariant(prev => 
-                prev === "crescent" ? "full" : 
-                prev === "full" ? "sun" : "crescent"
-              )}
+              onClick={handleMoonClick}
+              isLoading={isLoading}
             />
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mix-blend-overlay rounded-full"
