@@ -50,6 +50,10 @@ export default function SearchPage() {
       distance: "1.2 km",
       status: "Open",
       address: "123 Main St, Mumbai",
+      map: {
+        english: "3",
+        hindi: "1",
+      },
     },
     {
       id: 2,
@@ -60,6 +64,10 @@ export default function SearchPage() {
       distance: "2.5 km",
       status: "Open • Closes 10 PM",
       address: "456 Health Ave, Mumbai",
+      map: {
+        english: "4",
+        hindi: "5",
+      },
     },
     {
       id: 3,
@@ -70,8 +78,12 @@ export default function SearchPage() {
       distance: "3.8 km",
       status: "Closed • Opens 9 AM",
       address: "789 Delivery Rd, Mumbai",
+      map: {
+        english: "6",
+        hindi: "7",
+      },
     },
-  ]
+  ];
 
   const handleMoonClick = (id: number) => {
     setMoonVariant("sun")

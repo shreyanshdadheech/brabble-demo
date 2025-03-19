@@ -1,51 +1,142 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { X, Mic, Speaker, ChevronDown } from "lucide-react"
-import { PageTransition } from "@/components/PageTransition"
-import { AnimatedMoon } from "@/components/AnimatedMoon"
-import { motion } from "framer-motion"
-import { AccessDialog } from "@/components/AccessDialog"
+import { useState, useEffect, useRef, use } from "react";
+import { useRouter } from "next/navigation";
+import { X, Mic, Speaker, ChevronDown } from "lucide-react";
+import { PageTransition } from "@/components/PageTransition";
+import { AnimatedMoon } from "@/components/AnimatedMoon";
+import { motion } from "framer-motion";
+import { AccessDialog } from "@/components/AccessDialog";
+import { CallManager, CallManagerConfig } from "@/lib/CallManager"; // Adjust path as needed
 
 export default function CallPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const [selectedLanguage, setSelectedLanguage] = useState("English")
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [showDropdown, setShowDropdown] = useState(false)
+  // Unwrap params with React.use()
+  // @ts-ignore
+  const unwrappedParams = use(params);
+  // @ts-ignore
+  const businessId = unwrappedParams.id;
+
+  const router = useRouter();
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [currentTime, setCurrentTime] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Use a ref to hold the CallManager instance
+  const callManagerRef = useRef<CallManager | null>(null);
+
+  // Check if we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+    updateTime();
+  }, []);
+
+  // Function to update time with consistent formatting
+  const updateTime = () => {
+    const now = new Date();
+    // Use a fixed format that doesn't depend on locale
+    const hours = now.getHours() % 12 || 12;
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    const ampm = now.getHours() >= 12 ? "PM" : "AM";
+    setCurrentTime(`${hours}:${minutes} ${ampm}`);
+  };
 
   // Update time every minute
   useEffect(() => {
+    if (!isClient) return;
+
+    updateTime(); // Initial update
+
     const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000)
-    return () => clearInterval(timer)
-  }, [])
+      updateTime();
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, [isClient]);
 
   const businesses = [
     {
       id: "1",
       name: "ABC Travel",
       phone: "+91 98765 43210",
+      map: {
+        english: "3",
+        hindi: "1",
+      },
     },
     {
       id: "2",
       name: "Alolo Hospital",
       phone: "+91 98765 12345",
+      map: {
+        english: "4",
+        hindi: "5",
+      },
     },
     {
       id: "3",
       name: "XYZ Logistics",
       phone: "+91 98765 67890",
+      map: {
+        english: "6",
+        hindi: "7",
+      },
     },
-  ]
+  ];
 
-  const business = businesses.find((b) => b.id === params.id) || businesses[0]
-  const languages = ["Hindi", "English", "Marathi", "Kannada"]
+  const business = businesses.find((b) => b.id === businessId) || businesses[0];
+
+  // Initialize the CallManager when component mounts or language changes
+  // Only run on client-side
+  useEffect(() => {
+    if (!isClient) return;
+
+    // If there's an existing call, stop it first
+    if (callManagerRef.current) {
+      callManagerRef.current.stopCall();
+    }
+
+    console.log("This must hppen after");
+
+    const config: CallManagerConfig = {
+      // @ts-ignore
+      deploymentUrl:
+        "wss://conversation-388134955001.asia-south1.run.app/conversation/call/demo/connection",
+      // @ts-ignore
+      deploymentId: business?.map[selectedLanguage.toLowerCase()],
+      streamSid: "MZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      accountSid: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      callSid: "CAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    };
+
+    // Create a new CallManager instance
+    callManagerRef.current = CallManager.getInstance(config);
+
+    // Make the call with the new language configuration
+    callManagerRef.current.makeCall().catch((error) => {
+      console.error("Error initiating call:", error);
+    });
+
+    console.log(`Call initialized with language: ${selectedLanguage}`);
+
+    // Cleanup function to stop call when component unmounts or language changes again
+    return () => {
+      if (callManagerRef.current) {
+        console.log(`Stopping previous call for language: ${selectedLanguage}`);
+        callManagerRef.current.stopCall();
+      
+      }
+    };
+  }, [selectedLanguage, isClient]); // Re-run effect when ID, language, or client state changes
 
   const handleEndCall = () => {
-    router.push("/demo")
-  }
+    if (callManagerRef.current) {
+      callManagerRef.current.stopCall();
+    }
+    router.push("/demo");
+  };
+
+  const languages = ["Hindi", "English"];
 
   return (
     <PageTransition>
@@ -53,7 +144,9 @@ export default function CallPage({ params }: { params: { id: string } }) {
         {/* Language selection - hidden on mobile */}
         <div className="hidden md:flex w-full md:w-1/2 flex-col items-center">
           <div className="max-w-xs w-full">
-            <h2 className="text-xl font-bold mb-8 text-center">Select Language</h2>
+            <h2 className="text-xl font-bold mb-8 text-center">
+              Select Language
+            </h2>
             <div className="flex flex-col space-y-4">
               {languages.map((language) => (
                 <button
@@ -85,9 +178,7 @@ export default function CallPage({ params }: { params: { id: string } }) {
             <div className="relative h-full md:rounded-[40px] flex flex-col">
               {/* Status bar */}
               <div className="pt-2 pb-2 px-5 flex justify-between items-center text-xs text-white">
-                <span className="font-semibold">
-                  {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"  , hour12: true})}
-                </span>
+                <span className="font-semibold">{currentTime || ""}</span>
                 <div className="flex space-x-1">
                   <div className="w-4 h-2.5 bg-white rounded-sm"></div>
                   <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
@@ -105,14 +196,14 @@ export default function CallPage({ params }: { params: { id: string } }) {
                   <ChevronDown className="h-4 w-4" />
                 </button>
 
-                {showDropdown && (
+                {isClient && showDropdown && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 rounded-lg shadow-lg z-20 mx-4">
                     {languages.map((language) => (
                       <button
                         key={language}
                         onClick={() => {
-                          setSelectedLanguage(language)
-                          setShowDropdown(false)
+                          setSelectedLanguage(language);
+                          setShowDropdown(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600"
                       >
@@ -125,47 +216,64 @@ export default function CallPage({ params }: { params: { id: string } }) {
 
               {/* Full moon visualization with enhanced animation */}
               <div className="flex-1 flex items-center justify-center relative">
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                  className="relative"
-                >
-                  <AnimatedMoon variant="sun" className="w-48 h-48" />
-                </motion.div>
+                {isClient && (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.8, delay: 0.2 }}
+                      className="relative"
+                    >
+                      <AnimatedMoon variant="sun" className="w-48 h-48" />
+                    </motion.div>
 
-                {/* Enhanced ripple effects */}
-                <motion.div
-                  className="absolute pointer-events-none"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: [1, 2, 3], opacity: [0.3, 0.2, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{
-                    background: "radial-gradient(circle, rgb(250, 204, 21) 0%, transparent 70%)",
-                    width: "200px",
-                    height: "200px",
-                    borderRadius: "50%",
-                  }}
-                />
+                    {/* Enhanced ripple effects */}
+                    <motion.div
+                      className="absolute pointer-events-none"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: [1, 2, 3], opacity: [0.3, 0.2, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgb(250, 204, 21) 0%, transparent 70%)",
+                        width: "200px",
+                        height: "200px",
+                        borderRadius: "50%",
+                      }}
+                    />
+                  </>
+                )}
+
+                {/* Non-animated fallback for server-side rendering */}
+                {!isClient && (
+                  <div className="relative w-48 h-48 bg-yellow-300 rounded-full"></div>
+                )}
               </div>
 
-              {/* Full screen ripple effect */}
-              <motion.div
-                className="fixed inset-0 pointer-events-none"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 100, opacity: 0.1 }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                style={{
-                  background: "radial-gradient(circle, rgb(243 244 246) 0%, transparent 70%)",
-                  zIndex: -1,
-                }}
-              />
+              {/* Full screen ripple effect - only rendered client-side */}
+              {isClient && (
+                <motion.div
+                  className="fixed inset-0 pointer-events-none"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 100, opacity: 0.1 }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgb(243 244 246) 0%, transparent 70%)",
+                    zIndex: -1,
+                  }}
+                />
+              )}
 
               {/* Caller info */}
               <div className="text-center mb-6 px-4">
-                <h3 className="text-xl font-bold mb-1 text-white">{business.name}</h3>
+                <h3 className="text-xl font-bold mb-1 text-white">
+                  {business.name}
+                </h3>
                 <p className="text-gray-400">{business.phone}</p>
-                <p className="mt-2 text-sm text-gray-400">Connected • {selectedLanguage}</p>
+                <p className="mt-2 text-sm text-gray-400">
+                  Connected • {selectedLanguage}
+                </p>
               </div>
 
               {/* Call controls */}
@@ -207,6 +315,5 @@ export default function CallPage({ params }: { params: { id: string } }) {
         </div>
       </div>
     </PageTransition>
-  )
+  );
 }
-
