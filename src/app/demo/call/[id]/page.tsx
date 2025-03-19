@@ -9,7 +9,8 @@ import { motion } from "framer-motion";
 import { AccessDialog } from "@/components/AccessDialog";
 import { CallManager, CallManagerConfig } from "@/lib/CallManager"; // Adjust path as needed
 
-export default function CallPage({ params }: { params: { id: string } }) {
+// @ts-ignore
+export default function CallPage({ params }) {
   // Unwrap params with React.use()
   // @ts-ignore
   const unwrappedParams = use(params);
@@ -124,7 +125,6 @@ export default function CallPage({ params }: { params: { id: string } }) {
       if (callManagerRef.current) {
         console.log(`Stopping previous call for language: ${selectedLanguage}`);
         callManagerRef.current.stopCall();
-      
       }
     };
   }, [selectedLanguage, isClient]); // Re-run effect when ID, language, or client state changes
