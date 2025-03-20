@@ -1,3 +1,6 @@
+import { Logger } from "./Logger";
+import { BeepSound } from "./BeepSound";
+
 export interface CallManagerConfig {
   deploymentUrl: string;
   deploymentId: string;
@@ -14,11 +17,15 @@ export class CallManager {
   private workletNode: AudioWorkletNode | null = null;
   private startEventSent = false;
   private audioQueue: any[] = [];
+  private isMuted: boolean = false;
+
   private markQueue: string[] = [];
   private currentAudioSource: AudioBufferSourceNode | null = null; // Reference to the current playing audio source
   private orginalMediaStream = null;
   private isPlaying = false;
   private currentAudioItem: any;
+  private logger: Logger = Logger.getInstance();
+
   private onCall = false;
   private isProcessingQueue = false; // used to ensure only one queue processor runs at a time
 
@@ -51,6 +58,7 @@ export class CallManager {
    */
   public stopCall(): void {
     // Stop audio streaming and clear media devices.
+
     if (this.workletNode) {
       this.workletNode.disconnect();
       this.workletNode = null;
@@ -68,16 +76,18 @@ export class CallManager {
     // Close websocket connection.
     if (this.websocket && this.websocket.OPEN) {
       this.sendStopEvent();
-      console.log("Websocket Closed from here");
+      this.logger.info("Websocket Closed from here");
       this.websocket.close();
       this.websocket = null;
     }
     this.onCall = false;
     this.startEventSent = false;
     this.audioQueue = [];
+
     this.markQueue = [];
     this.currentAudioItem = null;
     this.isProcessingQueue = false;
+    BeepSound.playHangupBeep();
   }
 
   /**
@@ -104,7 +114,7 @@ export class CallManager {
       .connect(gainNode)
       .connect(this.audioContext.destination);
     this.ringOscillator.start();
-    console.info("Ringing started");
+    this.logger.info("Ringing started");
   }
 
   /**
@@ -115,8 +125,40 @@ export class CallManager {
       this.ringOscillator.stop();
       this.ringOscillator.disconnect();
       this.ringOscillator = null;
-      console.info("Ringing stopped");
+      this.logger.info("Ringing stopped");
     }
+  }
+
+  /**
+   * Mutes or unmutes the call
+   * @param mute If true, mutes the call. If false, unmutes the call.
+   * @returns Current mute state
+   */
+  public muteCall(mute?: boolean): boolean {
+    if (mute === undefined) {
+      this.isMuted = !this.isMuted;
+    } else {
+      this.isMuted = mute;
+    }
+
+    if (this.mediaStream) {
+      this.mediaStream.getAudioTracks().forEach((track) => {
+        track.enabled = !this.isMuted;
+      });
+
+      // Play appropriate beep sound
+      if (this.isMuted) {
+        BeepSound.playMuteBeep();
+      } else {
+        BeepSound.playUnmuteBeep();
+      }
+
+      this.logger.info(`Call ${this.isMuted ? "muted" : "unmuted"}`);
+    } else {
+      this.logger.warn("No active media stream to mute/unmute");
+    }
+
+    return this.isMuted;
   }
 
   /**
@@ -133,7 +175,7 @@ export class CallManager {
     this.websocket.binaryType = "arraybuffer";
 
     this.websocket.onopen = () => {
-      console.info("WebSocket connection established");
+      this.logger.info("WebSocket connection established");
       // Once connected, stop ringing and send connected event.
       this.stopRinging();
       this.sendConnectedEvent();
@@ -147,7 +189,7 @@ export class CallManager {
         // Process incoming media payload as needed
         this.queueAudio(data.media.payload); // Add audio to the queue
 
-        console.info("Media payload received");
+        this.logger.info("Media payload received");
       }
       if (data.event === "mark") {
         this.handleMarkEvent(data.mark);
@@ -163,7 +205,7 @@ export class CallManager {
     };
 
     this.websocket.onclose = () => {
-      console.info("WebSocket connection closed");
+      this.logger.info("WebSocket connection closed");
       this.stopCall();
     };
   }
@@ -172,7 +214,10 @@ export class CallManager {
   private queueAudio(payload: string) {
     // You can also attach a mark to each item if needed:
     this.audioQueue.push({ payload, mark: null });
-    console.info("Audio added to queue. Queue length:", this.audioQueue.length);
+    this.logger.info(
+      "Audio added to queue. Queue length:",
+      this.audioQueue.length
+    );
 
     // Start processing if not already doing so
     if (!this.isProcessingQueue) {
@@ -208,7 +253,10 @@ export class CallManager {
           streamSid: "",
         };
         this.websocket?.send(JSON.stringify(markMessage));
-        console.info("Sent mark for audio item:", this.currentAudioItem.mark);
+        this.logger.info(
+          "Sent mark for audio item:",
+          this.currentAudioItem.mark
+        );
       } else {
         console.warn("No mark available for this audio item.");
       }
@@ -217,7 +265,7 @@ export class CallManager {
       this.currentAudioItem = null;
     }
 
-    console.info("Finished processing audio queue.");
+    this.logger.info("Finished processing audio queue.");
     this.isProcessingQueue = false;
   }
 
@@ -241,13 +289,13 @@ export class CallManager {
           this.currentAudioSource = source;
 
           source.onended = () => {
-            console.info("Audio playback finished");
+            this.logger.info("Audio playback finished");
             this.currentAudioSource = null;
             resolve(undefined);
           };
 
           source.start(0);
-          console.info("Audio playing");
+          this.logger.info("Audio playing");
         },
         (error) => {
           console.error("Error decoding audio:", error);
@@ -268,7 +316,7 @@ export class CallManager {
       version: "1.0.0",
     };
     this.websocket.send(JSON.stringify(connectedMessage));
-    console.info("Connected event sent");
+    this.logger.info("Connected event sent");
   }
 
   /**
@@ -281,7 +329,7 @@ export class CallManager {
       streamSid: CallManager.config.streamSid,
     };
     this.websocket.send(JSON.stringify(stopMessage));
-    console.info("Stop event sent");
+    this.logger.info("Stop event sent");
   }
 
   /**
@@ -337,7 +385,7 @@ export class CallManager {
           const settings = audioTrack.getSettings();
           const channels = settings.channelCount || 1;
           this.sendStartEvent(this.audioContext.sampleRate, channels);
-          console.log("Start Event Sent");
+          this.logger.info("Start Event Sent");
           this.startEventSent = true;
         }
 
@@ -388,7 +436,7 @@ export class CallManager {
       streamSid: CallManager.config.streamSid,
     };
     this.websocket.send(JSON.stringify(startMessage));
-    console.info(
+    this.logger.info(
       "Start event sent with sampleRate:",
       sampleRate,
       "channels:",
@@ -398,12 +446,12 @@ export class CallManager {
 
   // Handle incoming mark events.
   handleMarkEvent(mark: string) {
-    console.info("Mark event received:", mark);
+    this.logger.info("Mark event received:", mark);
     // If an audio is currently processing and no mark is attached yet, assign the mark.
     if (this.currentAudioItem !== null && this.currentAudioItem.mark === null) {
       this.currentAudioItem.mark = mark;
     } else {
-      console.log(this.markQueue, "Marks Queue from else");
+      this.logger.info(`${this.markQueue}`, "Marks Queue from else");
       // Otherwise, store the mark for the next available audio item.
       this.markQueue.push(mark);
     }
@@ -413,7 +461,7 @@ export class CallManager {
     this.isPlaying = false;
     this.audioQueue = []; // Clear the queue
 
-    // console.info("Playback stopped, and queue cleared");
+    // this.logger.info("Playback stopped, and queue cleared");
     this.markQueue.forEach((mark) => {
       const markMessage = {
         event: "mark",
@@ -429,7 +477,7 @@ export class CallManager {
       this.currentAudioSource.stop(); // Stop the audio immediately
       this.currentAudioSource.disconnect(); // Clean up the audio node
       this.currentAudioSource = null; // Clear the reference
-      // console.info("Current audio playback stopped");
+      // this.logger.info("Current audio playback stopped");
     }
   }
 

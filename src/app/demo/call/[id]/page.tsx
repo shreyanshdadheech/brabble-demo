@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
-import { X, Mic, Speaker, ChevronDown } from "lucide-react";
+import { X, Mic, Speaker, ChevronDown, MicOff } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { AnimatedMoon } from "@/components/AnimatedMoon";
 import { motion } from "framer-motion";
 import { AccessDialog } from "@/components/AccessDialog";
 import { CallManager, CallManagerConfig } from "@/lib/CallManager"; // Adjust path as needed
+import { BeepSound } from "@/lib/BeepSound";
 
 // @ts-ignore
 export default function CallPage({ params }) {
@@ -22,6 +23,7 @@ export default function CallPage({ params }) {
   const [currentTime, setCurrentTime] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   // Use a ref to hold the CallManager instance
   const callManagerRef = useRef<CallManager | null>(null);
@@ -59,7 +61,7 @@ export default function CallPage({ params }) {
     {
       id: "1",
       name: "ABC Travel",
-      phone: "+91 98765 43210",
+      phone: "+91 98765 XXXXX",
       map: {
         english: "3",
         hindi: "1",
@@ -68,7 +70,7 @@ export default function CallPage({ params }) {
     {
       id: "2",
       name: "Alolo Hospital",
-      phone: "+91 98765 12345",
+      phone: "+91 98765 XXXXX",
       map: {
         english: "4",
         hindi: "5",
@@ -77,7 +79,7 @@ export default function CallPage({ params }) {
     {
       id: "3",
       name: "XYZ Logistics",
-      phone: "+91 98765 67890",
+      phone: "+91 98765 XXXXX",
       map: {
         english: "6",
         hindi: "7",
@@ -101,8 +103,7 @@ export default function CallPage({ params }) {
 
     const config: CallManagerConfig = {
       // @ts-ignore
-      deploymentUrl:
-        "wss://conversation-388134955001.asia-south1.run.app/conversation/call/demo/connection",
+      deploymentUrl: process.env.NEXT_PUBLIC_DEPLOYMENT_URL,
       // @ts-ignore
       deploymentId: business?.map[selectedLanguage.toLowerCase()],
       streamSid: "MZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -134,6 +135,13 @@ export default function CallPage({ params }) {
       callManagerRef.current.stopCall();
     }
     router.push("/demo");
+  };
+
+  const handleMuteToggle = () => {
+    if (callManagerRef.current) {
+      const newMuteState = callManagerRef.current.muteCall();
+      setIsMuted(newMuteState);
+    }
   };
 
   const languages = ["Hindi", "English"];
@@ -279,10 +287,21 @@ export default function CallPage({ params }) {
               {/* Call controls */}
               <div className="grid grid-cols-3 gap-6 px-4 mb-8">
                 <div className="flex flex-col items-center">
-                  <button className="bg-gray-700 text-white rounded-full p-3 w-12 h-12 flex items-center justify-center">
-                    <Mic className="h-5 w-5" />
+                  <button
+                    onClick={handleMuteToggle}
+                    className={`${
+                      isMuted ? "bg-white" : "bg-gray-700"
+                    } text-white rounded-full p-3 w-12 h-12 flex items-center justify-center`}
+                  >
+                    {isMuted ? (
+                      <MicOff className="h-5 w-5 text-black" />
+                    ) : (
+                      <Mic className="h-5 w-5" />
+                    )}
                   </button>
-                  <span className="text-xs mt-1 text-gray-400">mute</span>
+                  <span className="text-xs mt-1 text-gray-400">
+                    {isMuted ? "unmute" : "mute"}
+                  </span>
                 </div>
 
                 <div className="flex flex-col items-center">

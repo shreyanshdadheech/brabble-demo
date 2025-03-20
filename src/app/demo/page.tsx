@@ -53,7 +53,7 @@ export default function SearchPage() {
     {
       id: 1,
       name: "ABC Travel",
-      phone: "+91 98765 43210",
+      phone: "+91 98765 XXXXX",
       rating: 4.7,
       reviews: 253,
       distance: "1.2 km",
@@ -67,7 +67,7 @@ export default function SearchPage() {
     {
       id: 2,
       name: "Alolo Hospital",
-      phone: "+91 98765 12345",
+      phone: "+91 98765 XXXXX",
       rating: 4.3,
       reviews: 512,
       distance: "2.5 km",
@@ -81,7 +81,7 @@ export default function SearchPage() {
     {
       id: 3,
       name: "XYZ Logistics",
-      phone: "+91 98765 67890",
+      phone: "+91 98765 XXXXX",
       rating: 4.1,
       reviews: 128,
       distance: "3.8 km",
