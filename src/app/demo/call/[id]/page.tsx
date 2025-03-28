@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
-import { useRouter } from "next/navigation";
-import { X, Mic, Speaker, ChevronDown, MicOff } from "lucide-react";
-import { PageTransition } from "@/components/PageTransition";
-import { AnimatedMoon } from "@/components/AnimatedMoon";
-import { motion } from "framer-motion";
 import { AccessDialog } from "@/components/AccessDialog";
-import { CallManager, CallManagerConfig } from "@/lib/CallManager"; // Adjust path as needed
-import { BeepSound } from "@/lib/BeepSound";
+import { AnimatedMoon } from "@/components/AnimatedMoon";
+import { PageTransition } from "@/components/PageTransition";
+import {
+  CallManager,
+  CallManagerConfig,
+  ConnectionStatus,
+} from "@/lib/CallManager"; // Adjust path as needed
+import { motion } from "framer-motion";
+import { ChevronDown, Mic, MicOff, Speaker, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useRef, useState } from "react";
 
 // @ts-ignore
 export default function CallPage({ params }) {
@@ -24,6 +27,9 @@ export default function CallPage({ params }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("disconnected");
+  const [duration, setDuration] = useState<string>("00:00");
 
   // Use a ref to hold the CallManager instance
   const callManagerRef = useRef<CallManager | null>(null);
@@ -89,8 +95,7 @@ export default function CallPage({ params }) {
 
   const business = businesses.find((b) => b.id === businessId) || businesses[0];
 
-  // Initialize the CallManager when component mounts or language changes
-  // Only run on client-side
+  // Initialize the CallManager and start the call automatically
   useEffect(() => {
     if (!isClient) return;
 
@@ -99,11 +104,8 @@ export default function CallPage({ params }) {
       callManagerRef.current.stopCall();
     }
 
-    console.log("This must hppen after");
-
     const config: CallManagerConfig = {
-      // @ts-ignore
-      deploymentUrl: process.env.NEXT_PUBLIC_DEPLOYMENT_URL,
+      deploymentUrl: process.env.NEXT_PUBLIC_DEPLOYMENT_URL!,
       // @ts-ignore
       deploymentId: business?.map[selectedLanguage.toLowerCase()],
       streamSid: "MZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -111,24 +113,50 @@ export default function CallPage({ params }) {
       callSid: "CAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     };
 
-    // Create a new CallManager instance
+    // Initialize and start call
     callManagerRef.current = CallManager.getInstance(config);
-
-    // Make the call with the new language configuration
     callManagerRef.current.makeCall().catch((error) => {
-      console.error("Error initiating call:", error);
+      console.error("Error starting call:", error);
+    });
+  }, [selectedLanguage, isClient]);
+
+  useEffect(() => {
+    if (!isClient || !callManagerRef.current) return;
+
+    // Get initial status
+    setConnectionStatus(callManagerRef.current.getConnectionStatus());
+
+    // Subscribe to status changes
+    const unsubscribe = callManagerRef.current.onStatusChange((status) => {
+      console.log("Connection status changed:", status); // Debug log
+      setConnectionStatus(status);
     });
 
-    console.log(`Call initialized with language: ${selectedLanguage}`);
-
-    // Cleanup function to stop call when component unmounts or language changes again
     return () => {
-      if (callManagerRef.current) {
-        console.log(`Stopping previous call for language: ${selectedLanguage}`);
-        callManagerRef.current.stopCall();
-      }
+      unsubscribe();
     };
-  }, [selectedLanguage, isClient]); // Re-run effect when ID, language, or client state changes
+  }, [isClient, selectedLanguage]); // Include selectedLanguage since CallManager is reinitialized when it changes
+
+  useEffect(() => {
+    if (!isClient || connectionStatus !== "connected") {
+      setDuration("00:00");
+      return;
+    }
+
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      const diff = Date.now() - startTime;
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setDuration(
+        `${minutes.toString().padStart(2, "0")}:${seconds
+          .toString()
+          .padStart(2, "0")}`
+      );
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isClient, connectionStatus]);
 
   const handleEndCall = () => {
     if (callManagerRef.current) {
@@ -279,9 +307,49 @@ export default function CallPage({ params }) {
                   {business.name}
                 </h3>
                 <p className="text-gray-400">{business.phone}</p>
-                <p className="mt-2 text-sm text-gray-400">
-                  Connected • {selectedLanguage}
-                </p>
+                <div className="flex flex-col items-center gap-2">
+                  <div
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors duration-300 ${
+                      connectionStatus === "connected"
+                        ? "bg-green-500/10"
+                        : connectionStatus === "connecting"
+                        ? "bg-yellow-500/10"
+                        : "bg-red-500/10"
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full animate-pulse ${
+                        connectionStatus === "connected"
+                          ? "bg-green-500"
+                          : connectionStatus === "connecting"
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm ${
+                        connectionStatus === "connected"
+                          ? "text-green-500"
+                          : connectionStatus === "connecting"
+                          ? "text-yellow-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {connectionStatus === "connected"
+                        ? "Connected"
+                        : connectionStatus === "connecting"
+                        ? "Connecting..."
+                        : "Disconnected"}{" "}
+                      • {selectedLanguage}
+                    </span>
+                  </div>
+                  {connectionStatus === "connected" && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-700/50">
+                      <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                      <span className="text-sm text-gray-300">{duration}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Call controls */}

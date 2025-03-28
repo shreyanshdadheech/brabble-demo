@@ -1,5 +1,7 @@
-import { Logger } from "./Logger";
 import { BeepSound } from "./BeepSound";
+import { Logger } from "./Logger";
+
+export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
 export interface CallManagerConfig {
   deploymentUrl: string;
@@ -32,6 +34,12 @@ export class CallManager {
   private static config: CallManagerConfig;
   private static instance: CallManager;
 
+  private connectionStatus: ConnectionStatus = "disconnected";
+  private statusListeners: ((status: ConnectionStatus) => void)[] = [];
+
+  private audioContextInitialized = false;
+  private microphonePermissionGranted = false;
+
   private constructor() {}
 
   public static getInstance(config: CallManagerConfig): CallManager {
@@ -42,14 +50,66 @@ export class CallManager {
     return CallManager.instance;
   }
 
+  public getConnectionStatus(): ConnectionStatus {
+    return this.connectionStatus;
+  }
+
+  public onStatusChange(
+    callback: (status: ConnectionStatus) => void
+  ): () => void {
+    this.statusListeners.push(callback);
+    return () => {
+      this.statusListeners = this.statusListeners.filter(
+        (cb) => cb !== callback
+      );
+    };
+  }
+
+  private updateStatus(status: ConnectionStatus) {
+    if (this.connectionStatus !== status) {
+      this.connectionStatus = status;
+      // Debug log
+      console.log("CallManager status updated:", status);
+      // Ensure callbacks are executed in the next tick to avoid React batching issues
+      setTimeout(() => {
+        this.statusListeners.forEach((callback) => callback(status));
+      }, 0);
+    }
+  }
+
   /**
    * Initiates a call by starting a ringing sound and connecting to the websocket.
    */
   public async makeCall(): Promise<void> {
-    if (!this.onCall) {
+    if (this.onCall) return;
+
+    try {
+      // First check/request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.microphonePermissionGranted = true;
+      stream.getTracks().forEach((track) => track.stop()); // Stop the temporary stream
+
+      // Initialize AudioContext on first user interaction
+      if (!this.audioContextInitialized) {
+        this.audioContext = new (window.AudioContext ||
+          // @ts-ignore
+          window.webkitAudioContext)();
+        this.audioContextInitialized = true;
+      }
+
+      // Now proceed with call setup
       this.onCall = true;
+      this.updateStatus("connecting");
       this.startRinging();
       await this.connectWebSocket();
+    } catch (error) {
+      this.updateStatus("disconnected");
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError") {
+          throw new Error("Microphone permission denied");
+        }
+      }
+      throw error;
     }
   }
 
@@ -57,6 +117,7 @@ export class CallManager {
    * Stops the call and cleans up all resources.
    */
   public stopCall(): void {
+    this.updateStatus("disconnected");
     // Stop audio streaming and clear media devices.
 
     if (this.workletNode) {
@@ -94,13 +155,19 @@ export class CallManager {
    * Starts an oscillator to simulate a ringing sound.
    */
   private startRinging(): void {
-    // Create an AudioContext if not already created.
+    // Create an AudioContext if not already created and resume it
     if (!this.audioContext) {
       this.audioContext = new (window.AudioContext ||
         // @ts-ignore
         window.webkitAudioContext)();
     }
-    // Create a simple oscillator node as ringing tone.
+
+    // Ensure AudioContext is running (mobile browsers requirement)
+    if (this.audioContext.state === "suspended") {
+      this.audioContext.resume();
+    }
+
+    // Create a simple oscillator node as ringing tone
     this.ringOscillator = this.audioContext.createOscillator();
     this.ringOscillator.type = "sine";
     this.ringOscillator.frequency.setValueAtTime(
@@ -180,6 +247,7 @@ export class CallManager {
       this.stopRinging();
       this.sendConnectedEvent();
       this.startStreamingAudio();
+      this.updateStatus("connected");
     };
 
     this.websocket.onmessage = (event: MessageEvent) => {
@@ -201,11 +269,13 @@ export class CallManager {
 
     this.websocket.onerror = (error: Event) => {
       console.error("WebSocket error:", error);
+      this.updateStatus("disconnected");
       this.stopCall();
     };
 
     this.websocket.onclose = () => {
       this.logger.info("WebSocket connection closed");
+      this.updateStatus("disconnected");
       this.stopCall();
     };
   }
