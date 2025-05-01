@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Search,
-  Navigation,
-  Star,
-  Clock,
-  Phone,
-  ChevronDown,
-} from "lucide-react";
-import Image from "next/image";
-import { PageTransition } from "@/components/PageTransition";
 import { AnimatedMoon } from "@/components/AnimatedMoon";
+import { PageTransition } from "@/components/PageTransition";
 import { motion } from "framer-motion";
+import {
+  ChevronDown,
+  Clock,
+  Navigation,
+  Phone,
+  Search,
+  Star,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -52,7 +51,7 @@ export default function SearchPage() {
   const businesses = [
     {
       id: 1,
-      name: "ABC Travel",
+      name: "City Central Hospital",
       phone: "+91 98765 XXXXX",
       rating: 4.7,
       reviews: 253,
@@ -66,7 +65,7 @@ export default function SearchPage() {
     },
     {
       id: 2,
-      name: "Alolo Hospital",
+      name: "IFSC Bank",
       phone: "+91 98765 XXXXX",
       rating: 4.3,
       reviews: 512,
@@ -76,20 +75,6 @@ export default function SearchPage() {
       map: {
         english: "4",
         hindi: "5",
-      },
-    },
-    {
-      id: 3,
-      name: "XYZ Logistics",
-      phone: "+91 98765 XXXXX",
-      rating: 4.1,
-      reviews: 128,
-      distance: "3.8 km",
-      status: "Closed • Opens 9 AM",
-      address: "789 Delivery Rd, Mumbai",
-      map: {
-        english: "6",
-        hindi: "7",
       },
     },
   ];
