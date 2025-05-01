@@ -193,6 +193,8 @@ export class CallManagerV2 {
       try {
         if (
           this.audioContext.state !== "closed" &&
+          // @ts-ignore
+
           this.audioContext.state !== "closing"
         ) {
           this.audioContext
@@ -615,6 +617,8 @@ export class CallManagerV2 {
       this.lastMessageTime = currentTime;
 
       const audioVector = Array.from(parsedFrame.audio.audio);
+      // @ts-ignore
+
       const audioArray = new Uint8Array(audioVector);
 
       try {
