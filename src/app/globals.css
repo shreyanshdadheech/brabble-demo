@@ -65,9 +65,13 @@ body {
 @layer base {
   * {
     @apply border-border;
-    
   }
   body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Remove or comment out the old font-display class if it exists */
+/* .font-display {
+  font-family: var(--font-sf-pro), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+} */
